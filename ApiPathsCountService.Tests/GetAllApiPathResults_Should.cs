@@ -315,7 +315,7 @@ public class GetAllApiPathResults_Should
 
         _ = results.Should().HaveCount(3);
         _ = results.Should().AllSatisfy(r => r.Path.Should().Be("/same/path"));
-        _ = results.Select(r => r.Count).Should().BeEquivalentTo(["1", "2", "3"]);
+        _ = results.Select(r => r.Count).Should().BeEquivalentTo("1", "2", "3");
     }
 
     [Fact]
