@@ -1,7 +1,6 @@
-﻿using ApiPathsCountService.Models;
-using FluentAssertions;
+﻿namespace ApiPathsCountService.Tests;
 
-namespace ApiPathsCountService.Tests;
+using FluentAssertions;
 
 public class LoadFromFileAsync_Should
 {

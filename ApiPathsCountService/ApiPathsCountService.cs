@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using ApiPathsCountService.Models;
+﻿namespace ApiPathsCountService;
 
-namespace ApiPathsCountService;
+using global::ApiPathsCountService.Models;
+using System.Text.Json;
 
 public static class ApiPathsCountService
 {
@@ -11,5 +11,24 @@ public static class ApiPathsCountService
     {
         var json = await File.ReadAllTextAsync(fileAddress);
         return JsonSerializer.Deserialize<ApiPathsResponse>(json, _jsonOptions);
+    }
+
+    public static IEnumerable<ApiPathResult> GetAllApiPathResults(ApiPathsResponse response)
+    {
+        return response.Results.Select(wrapper => wrapper.Result);
+    }
+
+    public static IEnumerable<IGrouping<string, ApiPathResult>> GroupByPathPrefix(IEnumerable<ApiPathResult> results)
+    {
+        return results.GroupBy(result => result.Path);
+    }
+
+    public static IEnumerable<PathGroupSummary> GetGroupSummaries(IEnumerable<IGrouping<string, ApiPathResult>> groups)
+    {
+        return groups.Select(group => new PathGroupSummary(
+            group.Key,
+            group.Sum(result => int.TryParse(result.Count, out var count) ? count : 0),
+            group.Count()
+        ));
     }
 }
