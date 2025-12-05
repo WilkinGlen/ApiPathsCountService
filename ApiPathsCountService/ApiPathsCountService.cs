@@ -20,7 +20,18 @@ public static class ApiPathsCountService
 
     public static IEnumerable<IGrouping<string, ApiPathResult>> GroupByPathPrefix(IEnumerable<ApiPathResult> results)
     {
-        return results.GroupBy(result => result.Path);
+        return results.GroupBy(result => 
+        {
+            var parts = result.Path.Split('/');
+            if (parts.Length <= 1)
+            {
+                return result.Path;
+            }
+            
+            // Take all parts except the last one
+            var prefixParts = parts.Take(parts.Length - 1);
+            return string.Join('/', prefixParts);
+        });
     }
 
     public static IEnumerable<PathGroupSummary> GetGroupSummaries(IEnumerable<IGrouping<string, ApiPathResult>> groups)

@@ -17,8 +17,9 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(3);
-        _ = grouped.Should().AllSatisfy(g => g.Should().HaveCount(1));
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Should().HaveCount(3);
+        _ = grouped[0].Key.Should().Be("/GetIt/v1/DirectReports/StandardId");
     }
 
     [Fact]
@@ -34,15 +35,9 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        
-        var zkdpuwwGroup = grouped.FirstOrDefault(g => g.Key.Contains("ZKDPUWW"));
-        _ = zkdpuwwGroup.Should().NotBeNull();
-        _ = zkdpuwwGroup!.Should().HaveCount(2);
-        
-        var zedpuwwGroup = grouped.FirstOrDefault(g => g.Key.Contains("ZEDPUWW"));
-        _ = zedpuwwGroup.Should().NotBeNull();
-        _ = zedpuwwGroup!.Should().HaveCount(2);
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/GetIt/v1/DirectReports/StandardId");
+        _ = grouped[0].Should().HaveCount(4);
     }
 
     [Fact]
@@ -68,8 +63,9 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(4);
-        _ = grouped.Should().AllSatisfy(g => g.Should().HaveCount(1));
+        _ = grouped.Should().HaveCount(2);
+        _ = grouped.Should().Contain(g => g.Key == "/GetIt/v1/DirectReports/StandardId" && g.Count() == 2);
+        _ = grouped.Should().Contain(g => g.Key == "/PostIt/v1/Users" && g.Count() == 2);
     }
 
     [Fact]
@@ -129,8 +125,9 @@ public class GroupByPathPrefix_Should
             var allResults = ApiPathsCountService.GetAllApiPathResults(response!);
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults).ToList();
 
-            _ = grouped.Should().HaveCount(6);
-            _ = grouped.Should().AllSatisfy(g => g.Should().HaveCount(1));
+            _ = grouped.Should().HaveCount(2);
+            _ = grouped.Should().Contain(g => g.Key == "/GetIt/v1/DirectReports/StandardId" && g.Count() == 3);
+            _ = grouped.Should().Contain(g => g.Key == "/GetIt/v1/DirectReports/Name" && g.Count() == 3);
         }
         finally
         {
@@ -164,8 +161,9 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(3);
-        _ = grouped.Should().AllSatisfy(g => g.Should().HaveCount(1));
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api/v1/users/profile/settings");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -183,7 +181,7 @@ public class GroupByPathPrefix_Should
         _ = grouped.Should().HaveCount(1);
         var group = grouped[0];
         _ = group.Should().HaveCount(3);
-        _ = group.Key.Should().Be("/GetIt/v1/DirectReports/StandardId/AAA");
+        _ = group.Key.Should().Be("/GetIt/v1/DirectReports/StandardId");
     }
 
     [Fact]
@@ -200,7 +198,8 @@ public class GroupByPathPrefix_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
         _ = grouped.Should().HaveCount(2);
-        _ = grouped.Should().AllSatisfy(g => g.Should().HaveCount(2));
+        _ = grouped.Should().Contain(g => g.Key == "/GetIt/v1/DirectReports/StandardId" && g.Count() == 2);
+        _ = grouped.Should().Contain(g => g.Key == "/GetIt/v1/Users/Active" && g.Count() == 2);
     }
 
     [Fact]
@@ -215,10 +214,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var testGroup = grouped.FirstOrDefault(g => g.Key.Contains("q=test"));
-        _ = testGroup.Should().NotBeNull();
-        _ = testGroup!.Should().HaveCount(2);
+        // All paths have the same prefix "/api" after removing "search?..." part
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -233,9 +232,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var firstSessionGroup = grouped.FirstOrDefault(g => g.Key.Contains("550e8400"));
-        _ = firstSessionGroup!.Should().HaveCount(2);
+        // All three paths have the same prefix "/api/sessions" after removing the GUID
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api/sessions");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -268,9 +268,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var redLargeGroup = grouped.FirstOrDefault(g => g.Key.Contains("red") && g.Key.Contains("large"));
-        _ = redLargeGroup!.Should().HaveCount(2);
+        // All matrix parameter paths have the same prefix "/api" after removing products;... part
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -285,9 +286,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var section1Group = grouped.FirstOrDefault(g => g.Key.Contains("#section1"));
-        _ = section1Group!.Should().HaveCount(2);
+        // All paths have the same prefix "/api/documents" after removing "doc123#..." part
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api/documents");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -353,9 +355,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var helloWorldGroup = grouped.FirstOrDefault(g => g.Key.Contains("hello%20world"));
-        _ = helloWorldGroup!.Should().HaveCount(2);
+        // All paths have the same prefix "/api" after removing the search query part
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -370,9 +373,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var page1Group = grouped.FirstOrDefault(g => g.Key.Contains("page=1"));
-        _ = page1Group!.Should().HaveCount(2);
+        // All pagination paths have the same prefix "/api" after removing items?... part
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -404,9 +408,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var rootGroup = grouped.FirstOrDefault(g => g.Key == "/");
-        _ = rootGroup!.Should().HaveCount(2);
+        // Both "/" and "/api" when split and have last segment removed become "" (empty prefix)
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -438,9 +443,17 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
+        // "/api/endpoint/" splits to ["", "api", "endpoint", ""] - removing last gives ["", "api", "endpoint"] ? "/api/endpoint"
+        // "/api/endpoint" splits to ["", "api", "endpoint"] - removing last gives ["", "api"] ? "/api"
+        // So they end up in 2 different groups
         _ = grouped.Should().HaveCount(2);
-        var trailingSlashGroup = grouped.FirstOrDefault(g => g.Key.EndsWith('/'));
+        var trailingSlashGroup = grouped.FirstOrDefault(g => g.Key == "/api/endpoint");
+        _ = trailingSlashGroup.Should().NotBeNull();
         _ = trailingSlashGroup!.Should().HaveCount(2);
+        
+        var noTrailingSlashGroup = grouped.FirstOrDefault(g => g.Key == "/api");
+        _ = noTrailingSlashGroup.Should().NotBeNull();
+        _ = noTrailingSlashGroup!.Should().HaveCount(1);
     }
 
     [Fact]
@@ -456,7 +469,7 @@ public class GroupByPathPrefix_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
         _ = grouped.Should().HaveCount(2);
-        var lowercaseGroup = grouped.FirstOrDefault(g => g.Key == "/api/users");
+        var lowercaseGroup = grouped.FirstOrDefault(g => g.Key == "/api");
         _ = lowercaseGroup!.Should().HaveCount(2);
     }
 
@@ -472,9 +485,10 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var spacesGroup = grouped.FirstOrDefault(g => g.Key.Contains(' '));
-        _ = spacesGroup!.Should().HaveCount(2);
+        // Both paths have the same prefix "/api" after removing the last segment
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api");
+        _ = grouped[0].Should().HaveCount(3);
     }
 
     [Fact]
@@ -508,7 +522,7 @@ public class GroupByPathPrefix_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
         _ = grouped.Should().HaveCount(2);
-        var longGroup = grouped.FirstOrDefault(g => g.Key.Contains("seg100"));
+        var longGroup = grouped.FirstOrDefault(g => g.Key.Contains("seg99"));
         _ = longGroup!.Should().HaveCount(2);
     }
 
@@ -525,7 +539,7 @@ public class GroupByPathPrefix_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
         _ = grouped.Should().HaveCount(2);
-        var numericGroup = grouped.FirstOrDefault(g => g.Key.Contains("123"));
+        var numericGroup = grouped.FirstOrDefault(g => g.Key == "/123/456");
         _ = numericGroup!.Should().HaveCount(2);
     }
 
@@ -541,8 +555,9 @@ public class GroupByPathPrefix_Should
 
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
-        _ = grouped.Should().HaveCount(2);
-        var txtGroup = grouped.FirstOrDefault(g => g.Key.Contains("file.txt"));
-        _ = txtGroup!.Should().HaveCount(2);
+        // All three paths have the same prefix "/api" after removing the filename
+        _ = grouped.Should().HaveCount(1);
+        _ = grouped[0].Key.Should().Be("/api");
+        _ = grouped[0].Should().HaveCount(3);
     }
 }

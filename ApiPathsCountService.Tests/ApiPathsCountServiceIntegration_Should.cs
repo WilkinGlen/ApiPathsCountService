@@ -28,22 +28,61 @@ public class ApiPathsCountServiceIntegration_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(3);
+            // All paths group under two prefixes: /GetIt/v1/DirectReports/StandardId and /GetIt/v1/DirectReports/Name
+            _ = summaries.Should().HaveCount(2);
             
-            var zkdpuwwSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("ZKDPUWW"));
-            _ = zkdpuwwSummary.Should().NotBeNull();
-            _ = zkdpuwwSummary!.TotalCount.Should().Be(3);
-            _ = zkdpuwwSummary.OccurrenceCount.Should().Be(2);
+            var standardIdSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/GetIt/v1/DirectReports/StandardId");
+            _ = standardIdSummary.Should().NotBeNull();
+            _ = standardIdSummary!.TotalCount.Should().Be(6);
+            _ = standardIdSummary.OccurrenceCount.Should().Be(3);
             
-            var zedpuwwSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("ZEDPUWW"));
-            _ = zedpuwwSummary.Should().NotBeNull();
-            _ = zedpuwwSummary!.TotalCount.Should().Be(3);
-            _ = zedpuwwSummary.OccurrenceCount.Should().Be(1);
-            
-            var glenSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("Glen"));
-            _ = glenSummary.Should().NotBeNull();
-            _ = glenSummary!.TotalCount.Should().Be(15);
-            _ = glenSummary.OccurrenceCount.Should().Be(2);
+            var nameSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/GetIt/v1/DirectReports/Name");
+            _ = nameSummary.Should().NotBeNull();
+            _ = nameSummary!.TotalCount.Should().Be(15);
+            _ = nameSummary.OccurrenceCount.Should().Be(2);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task LoadGroupAndSummarize_WhenProcessingCompleteWorkflowDifferenceInMiddel()
+    {
+        var tempFile = Path.GetTempFileName();
+        var testJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/GetIt/v1/DirectReports/StandardId/ZKDPUWW","Count":"1"}},
+                {"preview":false,"result":{"Path":"/GetIt/v1/DirectReports/StandardId/ZKDPUWW","Count":"2"}},
+                {"preview":false,"result":{"Path":"/GetIt/v1/DirectReports/StandardId/ZKDPUWW","Count":"3"}},
+                {"preview":false,"result":{"Path":"/GetIt/v1/DirectReports/Name/ZKDPUWW","Count":"5"}},
+                {"preview":false,"result":{"Path":"/GetIt/v1/DirectReports/Name/ZKDPUWW","Count":"10"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, testJson);
+
+            var response = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+            var allResults = ApiPathsCountService.GetAllApiPathResults(response!);
+            var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
+            var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+            // All paths group under two prefixes: /GetIt/v1/DirectReports/StandardId and /GetIt/v1/DirectReports/Name
+            _ = summaries.Should().HaveCount(2);
+
+            var standardIdSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/GetIt/v1/DirectReports/StandardId");
+            _ = standardIdSummary.Should().NotBeNull();
+            _ = standardIdSummary!.TotalCount.Should().Be(6);
+            _ = standardIdSummary.OccurrenceCount.Should().Be(3);
+
+            var nameSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/GetIt/v1/DirectReports/Name");
+            _ = nameSummary.Should().NotBeNull();
+            _ = nameSummary!.TotalCount.Should().Be(15);
+            _ = nameSummary.OccurrenceCount.Should().Be(2);
         }
         finally
         {
@@ -76,10 +115,12 @@ public class ApiPathsCountServiceIntegration_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(6);
+            // Two groups: StandardId (3 items) and Name (3 items)
+            _ = summaries.Should().HaveCount(2);
             _ = summaries.Sum(s => s.TotalCount).Should().Be(9);
             _ = summaries.Sum(s => s.OccurrenceCount).Should().Be(6);
-            _ = summaries.Should().AllSatisfy(s => s.OccurrenceCount.Should().Be(1));
+            _ = summaries.Should().Contain(s => s.PathPrefix == "/GetIt/v1/DirectReports/StandardId" && s.OccurrenceCount == 3);
+            _ = summaries.Should().Contain(s => s.PathPrefix == "/GetIt/v1/DirectReports/Name" && s.OccurrenceCount == 3);
         }
         finally
         {
@@ -111,17 +152,11 @@ public class ApiPathsCountServiceIntegration_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(2);
-            
-            var getSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("get"));
-            _ = getSummary.Should().NotBeNull();
-            _ = getSummary!.TotalCount.Should().Be(600);
-            _ = getSummary.OccurrenceCount.Should().Be(3);
-            
-            var postSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("post"));
-            _ = postSummary.Should().NotBeNull();
-            _ = postSummary!.TotalCount.Should().Be(125);
-            _ = postSummary.OccurrenceCount.Should().Be(2);
+            // All paths group under "/api/users" prefix
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].PathPrefix.Should().Be("/api/users");
+            _ = summaries[0].TotalCount.Should().Be(725);
+            _ = summaries[0].OccurrenceCount.Should().Be(5);
         }
         finally
         {
@@ -179,17 +214,11 @@ public class ApiPathsCountServiceIntegration_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(2);
-            
-            var testSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/api/test");
-            _ = testSummary.Should().NotBeNull();
-            _ = testSummary!.TotalCount.Should().Be(30);
-            _ = testSummary.OccurrenceCount.Should().Be(3);
-            
-            var otherSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/api/other");
-            _ = otherSummary.Should().NotBeNull();
-            _ = otherSummary!.TotalCount.Should().Be(5);
-            _ = otherSummary.OccurrenceCount.Should().Be(2);
+            // All paths group under "/api" prefix
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].PathPrefix.Should().Be("/api");
+            _ = summaries[0].TotalCount.Should().Be(35);
+            _ = summaries[0].OccurrenceCount.Should().Be(5);
         }
         finally
         {
@@ -226,13 +255,14 @@ public class ApiPathsCountServiceIntegration_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(7);
+            // Three groups: /api/v1/users, /api/v1/products, /api/v2/orders
+            _ = summaries.Should().HaveCount(3);
             _ = summaries.Sum(s => s.TotalCount).Should().Be(3915);
             
-            var user1Summary = summaries.FirstOrDefault(s => s.PathPrefix == "/api/v1/users/1");
-            _ = user1Summary.Should().NotBeNull();
-            _ = user1Summary!.OccurrenceCount.Should().Be(2);
-            _ = user1Summary.TotalCount.Should().Be(15);
+            var usersSum = summaries.FirstOrDefault(s => s.PathPrefix == "/api/v1/users");
+            _ = usersSum.Should().NotBeNull();
+            _ = usersSum!.TotalCount.Should().Be(65);
+            _ = usersSum.OccurrenceCount.Should().Be(4);
         }
         finally
         {
@@ -266,15 +296,14 @@ public class ApiPathsCountServiceIntegration_Should
             _ = allResults.Should().HaveCount(3);
             
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults).ToList();
-            _ = grouped.Should().HaveCount(2);
+            // All paths group under "/test/path" prefix
+            _ = grouped.Should().HaveCount(1);
             
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
-            _ = summaries.Should().HaveCount(2);
-            
-            var alphaSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("alpha"));
-            _ = alphaSummary.Should().NotBeNull();
-            _ = alphaSummary!.TotalCount.Should().Be(50);
-            _ = alphaSummary.OccurrenceCount.Should().Be(2);
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].PathPrefix.Should().Be("/test/path");
+            _ = summaries[0].TotalCount.Should().Be(74);
+            _ = summaries[0].OccurrenceCount.Should().Be(3);
         }
         finally
         {
@@ -307,7 +336,7 @@ public class ApiPathsCountServiceIntegration_Should
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
             _ = summaries.Should().HaveCount(1);
-            _ = summaries[0].PathPrefix.Should().Be("/single/path");
+            _ = summaries[0].PathPrefix.Should().Be("/single");
             _ = summaries[0].TotalCount.Should().Be(15);
             _ = summaries[0].OccurrenceCount.Should().Be(5);
         }
@@ -327,7 +356,9 @@ public class ApiPathsCountServiceIntegration_Should
                 {"preview":false,"result":{"Path":"/api/v1/resource/sub/item/detail/full","Count":"10"}},
                 {"preview":false,"result":{"Path":"/api/v1/resource/sub/item/detail/full","Count":"20"}},
                 {"preview":false,"result":{"Path":"/api/v1/resource/sub/item/detail/summary","Count":"5"}},
-                {"preview":false,"result":{"Path":"/api/v2/different/path/structure","Count":"100"}}
+                {"preview":false,"result":{"Path":"/api/v2/orders/A","Count":"1000"}},
+                {"preview":false,"result":{"Path":"/api/v2/orders/B","Count":"2000"}},
+                {"preview":false,"result":{"Path":"/api/v2/orders/A","Count":"500"}}
             ]
         }
         """;
@@ -340,12 +371,13 @@ public class ApiPathsCountServiceIntegration_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(3);
+            // Two groups: /api/v1/resource/sub/item/detail (3 items) and /api/v2/different/path (1 item)
+            _ = summaries.Should().HaveCount(2);
             
-            var fullSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("full"));
-            _ = fullSummary.Should().NotBeNull();
-            _ = fullSummary!.TotalCount.Should().Be(30);
-            _ = fullSummary.OccurrenceCount.Should().Be(2);
+            var detailSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/api/v1/resource/sub/item/detail");
+            _ = detailSummary.Should().NotBeNull();
+            _ = detailSummary!.TotalCount.Should().Be(35);
+            _ = detailSummary.OccurrenceCount.Should().Be(3);
         }
         finally
         {
@@ -379,21 +411,13 @@ public class ApiPathsCountServiceIntegration_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(3);
+            // All paths group under "/path" prefix
+            _ = summaries.Should().HaveCount(1);
             _ = summaries.Sum(s => s.TotalCount).Should().Be(6160);
             _ = summaries.Sum(s => s.OccurrenceCount).Should().Be(7);
-            
-            var pathASummary = summaries.FirstOrDefault(s => s.PathPrefix == "/path/A");
-            _ = pathASummary!.TotalCount.Should().Be(6000);
-            _ = pathASummary.OccurrenceCount.Should().Be(3);
-            
-            var pathBSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/path/B");
-            _ = pathBSummary!.TotalCount.Should().Be(100);
-            _ = pathBSummary.OccurrenceCount.Should().Be(1);
-            
-            var pathCSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/path/C");
-            _ = pathCSummary!.TotalCount.Should().Be(60);
-            _ = pathCSummary.OccurrenceCount.Should().Be(3);
+            _ = summaries[0].PathPrefix.Should().Be("/path");
+            _ = summaries[0].TotalCount.Should().Be(6160);
+            _ = summaries[0].OccurrenceCount.Should().Be(7);
         }
         finally
         {
@@ -422,7 +446,8 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(2);
+            // All paths group under "/fluent/api" prefix
+            _ = summaries.Should().HaveCount(1);
             _ = summaries.Sum(s => s.TotalCount).Should().Be(60);
         }
         finally
@@ -458,10 +483,11 @@ public class ApiPathsCountServiceIntegration_Should
                 .OrderByDescending(s => s.TotalCount)
                 .ToList();
 
+            // Two groups: /api/users (total 305) and /api/products (total 125)
             _ = summariesWithHighCounts.Should().HaveCount(2);
-            _ = summariesWithHighCounts[0].PathPrefix.Should().Contain("admin");
-            _ = summariesWithHighCounts[0].TotalCount.Should().Be(300);
-            _ = summariesWithHighCounts[1].PathPrefix.Should().Contain("list");
+            _ = summariesWithHighCounts[0].PathPrefix.Should().Be("/api/users");
+            _ = summariesWithHighCounts[0].TotalCount.Should().Be(305);
+            _ = summariesWithHighCounts[1].PathPrefix.Should().Be("/api/products");
             _ = summariesWithHighCounts[1].TotalCount.Should().Be(125);
         }
         finally
@@ -494,15 +520,17 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
+            // All paths group under "/stats" prefix
+            _ = summaries.Should().HaveCount(1);
             var totalCount = summaries.Sum(s => s.TotalCount);
             var averageCount = summaries.Average(s => s.TotalCount);
             var maxCount = summaries.Max(s => s.TotalCount);
             var minCount = summaries.Min(s => s.TotalCount);
 
             _ = totalCount.Should().Be(150);
-            _ = averageCount.Should().Be(50);
-            _ = maxCount.Should().Be(90);
-            _ = minCount.Should().Be(30);
+            _ = averageCount.Should().Be(150);
+            _ = maxCount.Should().Be(150);
+            _ = minCount.Should().Be(150);
         }
         finally
         {
@@ -542,10 +570,11 @@ public class ApiPathsCountServiceIntegration_Should
                 })
                 .ToList();
 
-            _ = projectedData.Should().HaveCount(3);
-            _ = projectedData.First(p => p.Path.Contains('A')).Average.Should().Be(150);
-            _ = projectedData.First(p => p.Path.Contains('B')).Average.Should().Be(300);
-            _ = projectedData.First(p => p.Path.Contains('C')).Average.Should().Be(50);
+            // All paths group under "/transform/data" prefix
+            _ = projectedData.Should().HaveCount(1);
+            _ = projectedData[0].Path.Should().Be("/transform/data");
+            _ = projectedData[0].Total.Should().Be(700);
+            _ = projectedData[0].Average.Should().Be(140);
         }
         finally
         {
@@ -576,12 +605,14 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GroupByPathPrefix(
                         ApiPathsCountService.GetAllApiPathResults(
                             (await ApiPathsCountService.LoadFromFileAsync(tempFile))!)))
-                .Where(s => s.PathPrefix.Contains("/api/v1/"))
+                .Where(s => s.PathPrefix.Contains("/api/v1"))
                 .ToList();
 
-            _ = v1Summaries.Should().HaveCount(2);
+            // One group with v1: /api/v1 (for both users and products)
+            _ = v1Summaries.Should().HaveCount(1);
+            _ = v1Summaries[0].PathPrefix.Should().Be("/api/v1");
             _ = v1Summaries.Sum(s => s.TotalCount).Should().Be(70);
-            _ = v1Summaries.Should().AllSatisfy(s => s.PathPrefix.Should().Contain("/api/v1/"));
+            _ = v1Summaries.Should().AllSatisfy(s => s.PathPrefix.Should().Contain("/api/v1"));
         }
         finally
         {
@@ -659,12 +690,11 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(3);
-            
-            var testQuerySummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("q=test"));
-            _ = testQuerySummary.Should().NotBeNull();
-            _ = testQuerySummary!.TotalCount.Should().Be(125);
-            _ = testQuerySummary.OccurrenceCount.Should().Be(2);
+            // All query string paths group under "/api" prefix (query strings are part of last segment)
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].PathPrefix.Should().Be("/api");
+            _ = summaries[0].TotalCount.Should().Be(405);
+            _ = summaries[0].OccurrenceCount.Should().Be(5);
         }
         finally
         {
@@ -733,12 +763,11 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(3);
-            
-            var redLargeSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("red") && s.PathPrefix.Contains("large"));
-            _ = redLargeSummary.Should().NotBeNull();
-            _ = redLargeSummary!.TotalCount.Should().Be(75);
-            _ = redLargeSummary.OccurrenceCount.Should().Be(2);
+            // All paths group under "/api" prefix
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].PathPrefix.Should().Be("/api");
+            _ = summaries[0].TotalCount.Should().Be(400);
+            _ = summaries[0].OccurrenceCount.Should().Be(5);
         }
         finally
         {
@@ -770,12 +799,13 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(3);
+            // Two groups: /api/documents and /api/pages
+            _ = summaries.Should().HaveCount(2);
             
-            var section1Summary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("#section1"));
-            _ = section1Summary.Should().NotBeNull();
-            _ = section1Summary!.TotalCount.Should().Be(30);
-            _ = section1Summary.OccurrenceCount.Should().Be(2);
+            var docsSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/api/documents");
+            _ = docsSummary.Should().NotBeNull();
+            _ = docsSummary!.TotalCount.Should().Be(55);
+            _ = docsSummary.OccurrenceCount.Should().Be(3);
         }
         finally
         {
@@ -843,10 +873,10 @@ public class ApiPathsCountServiceIntegration_Should
         {
             await File.WriteAllTextAsync(tempFile, testJson);
 
-            var summaries = ApiPathsCountService.GetGroupSummaries(
-                ApiPathsCountService.GroupByPathPrefix(
-                    ApiPathsCountService.GetAllApiPathResults(
-                        (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
+            var response = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+            var allResults = ApiPathsCountService.GetAllApiPathResults(response!);
+            var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
+            var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
             _ = summaries.Should().HaveCount(4);
             
@@ -885,20 +915,22 @@ public class ApiPathsCountServiceIntegration_Should
                 ApiPathsCountService.GroupByPathPrefix(
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!)))
-                .GroupBy(s => s.PathPrefix.Split('/')[^1])
-                .Select(g => new
-                {
-                    Action = g.Key,
-                    TotalCalls = g.Sum(s => s.TotalCount),
-                    UniqueEndpoints = g.Count()
-                })
-                .OrderByDescending(x => x.TotalCalls)
-                .ToList();
+            .GroupBy(s => s.PathPrefix.Split('/')[s.PathPrefix.Split('/').Length - 1])
+            .Select(g => new
+            {
+                Action = g.Key,
+                TotalCalls = g.Sum(s => s.TotalCount),
+                UniqueEndpoints = g.Count()
+            })
+            .OrderByDescending(x => x.TotalCalls)
+            .ToList();
 
-            _ = summaries.Should().HaveCount(3);
-            _ = summaries[0].Action.Should().Be("create");
-            _ = summaries[0].TotalCalls.Should().Be(95);
-            _ = summaries[0].UniqueEndpoints.Should().Be(2);
+        // Two prefix groups: /api/users and /api/products
+        // After re-grouping by last segment: "users" and "products"
+        _ = summaries.Should().HaveCount(2);
+        _ = summaries[0].Action.Should().Be("products");
+        _ = summaries[0].TotalCalls.Should().Be(70);
+        _ = summaries[0].UniqueEndpoints.Should().Be(1);
         }
         finally
         {
@@ -930,13 +962,14 @@ public class ApiPathsCountServiceIntegration_Should
                 ApiPathsCountService.GroupByPathPrefix(
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!)))
-                .OrderByDescending(s => s.TotalCount)
-                .ToList();
+            .OrderByDescending(s => s.TotalCount)
+            .ToList();
 
+            // Four groups by locale: en-US, de-DE, fr-FR, es-ES
             _ = summaries.Should().HaveCount(4);
-            _ = summaries[0].PathPrefix.Should().Contain("en-US");
+            _ = summaries[0].PathPrefix.Should().Be("/api/content/en-US");
             _ = summaries[0].TotalCount.Should().Be(250);
-            _ = summaries[1].PathPrefix.Should().Contain("de-DE");
+            _ = summaries[1].PathPrefix.Should().Be("/api/content/de-DE");
             _ = summaries[1].TotalCount.Should().Be(200);
         }
         finally
@@ -969,17 +1002,18 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(3);
+            // Two groups: /api/sessions (3 items) and /api/tokens (2 items)
+            _ = summaries.Should().HaveCount(2);
             
-            var firstSessionSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("550e8400"));
-            _ = firstSessionSummary.Should().NotBeNull();
-            _ = firstSessionSummary!.TotalCount.Should().Be(60);
-            _ = firstSessionSummary.OccurrenceCount.Should().Be(2);
+            var sessionsSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/api/sessions");
+            _ = sessionsSummary.Should().NotBeNull();
+            _ = sessionsSummary!.TotalCount.Should().Be(105);
+            _ = sessionsSummary.OccurrenceCount.Should().Be(3);
             
-            var tokenSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("tokens"));
-            _ = tokenSummary.Should().NotBeNull();
-            _ = tokenSummary!.TotalCount.Should().Be(300);
-            _ = tokenSummary.OccurrenceCount.Should().Be(2);
+            var tokensSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/api/tokens");
+            _ = tokensSummary.Should().NotBeNull();
+            _ = tokensSummary!.TotalCount.Should().Be(300);
+            _ = tokensSummary.OccurrenceCount.Should().Be(2);
         }
         finally
         {
@@ -1048,12 +1082,13 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(3);
+            // Two groups: /api (for search queries) and /api/files
+            _ = summaries.Should().HaveCount(2);
             
-            var helloWorldSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("hello%20world"));
-            _ = helloWorldSummary.Should().NotBeNull();
-            _ = helloWorldSummary!.TotalCount.Should().Be(100);
-            _ = helloWorldSummary.OccurrenceCount.Should().Be(2);
+            var searchSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/api");
+            _ = searchSummary.Should().NotBeNull();
+            _ = searchSummary!.TotalCount.Should().Be(130);
+            _ = searchSummary.OccurrenceCount.Should().Be(3);
         }
         finally
         {
@@ -1085,15 +1120,14 @@ public class ApiPathsCountServiceIntegration_Should
                 ApiPathsCountService.GroupByPathPrefix(
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!)))
-                .OrderByDescending(s => s.TotalCount)
-                .ToList();
+            .OrderByDescending(s => s.TotalCount)
+            .ToList();
 
-            _ = summaries.Should().HaveCount(5);
-            
-            var page1Summary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("page=1"));
-            _ = page1Summary.Should().NotBeNull();
-            _ = page1Summary!.TotalCount.Should().Be(1500);
-            _ = page1Summary.OccurrenceCount.Should().Be(2);
+            // All paths group under "/api" prefix
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].PathPrefix.Should().Be("/api");
+            _ = summaries[0].TotalCount.Should().Be(3450);
+            _ = summaries[0].OccurrenceCount.Should().Be(6);
         }
         finally
         {
@@ -1128,8 +1162,10 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(5000);
+            // 100 groups (path0 through path99), each with 50 items
+            _ = summaries.Should().HaveCount(100);
             _ = summaries.Sum(s => s.OccurrenceCount).Should().Be(5000);
+            _ = summaries.Should().AllSatisfy(s => s.OccurrenceCount.Should().Be(50));
         }
         finally
         {
@@ -1198,7 +1234,6 @@ public class ApiPathsCountServiceIntegration_Should
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
             _ = summaries.Should().HaveCount(1);
-            _ = summaries[0].OccurrenceCount.Should().Be(7);
             _ = summaries[0].TotalCount.Should().BeGreaterOrEqualTo(100);
         }
         finally
@@ -1232,8 +1267,8 @@ public class ApiPathsCountServiceIntegration_Should
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
 
-            _ = summaries.Should().HaveCount(5);
-            var uppercaseGroup = summaries.FirstOrDefault(s => s.PathPrefix.Contains("UPPERCASE"));
+            _ = summaries.Should().HaveCount(4);
+            var uppercaseGroup = summaries.FirstOrDefault(s => s.PathPrefix == "/UPPERCASE");
             _ = uppercaseGroup!.TotalCount.Should().Be(110);
             _ = uppercaseGroup.OccurrenceCount.Should().Be(2);
         }

@@ -18,8 +18,11 @@ public class GetGroupSummaries_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results);
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-        _ = summaries.Should().HaveCount(3);
-        _ = summaries.Should().AllSatisfy(s => s.OccurrenceCount.Should().Be(1));
+        _ = summaries.Should().HaveCount(1);
+        var summary = summaries[0];
+        _ = summary.PathPrefix.Should().Be("/GetIt/v1/DirectReports/StandardId");
+        _ = summary.TotalCount.Should().Be(6);
+        _ = summary.OccurrenceCount.Should().Be(3);
     }
 
     [Fact]
@@ -36,7 +39,7 @@ public class GetGroupSummaries_Should
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
         _ = summaries.Should().HaveCount(1);
-        _ = summaries[0].PathPrefix.Should().Be("/GetIt/v1/DirectReports/StandardId/ZKDPUWW");
+        _ = summaries[0].PathPrefix.Should().Be("/GetIt/v1/DirectReports/StandardId");
         _ = summaries[0].TotalCount.Should().Be(6);
         _ = summaries[0].OccurrenceCount.Should().Be(3);
     }
@@ -55,8 +58,10 @@ public class GetGroupSummaries_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results);
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-        _ = summaries.Should().HaveCount(4);
-        _ = summaries.Should().AllSatisfy(s => s.OccurrenceCount.Should().Be(1));
+        // Two groups: StandardId (2 items) and Name (2 items)
+        _ = summaries.Should().HaveCount(2);
+        _ = summaries.Should().Contain(s => s.PathPrefix == "/GetIt/v1/DirectReports/StandardId" && s.OccurrenceCount == 2);
+        _ = summaries.Should().Contain(s => s.PathPrefix == "/GetIt/v1/DirectReports/Name" && s.OccurrenceCount == 2);
     }
 
     [Fact]
@@ -98,9 +103,10 @@ public class GetGroupSummaries_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results);
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-        _ = summaries.Should().HaveCount(3);
-        _ = summaries.Should().AllSatisfy(s => s.TotalCount.Should().Be(0));
-        _ = summaries.Should().AllSatisfy(s => s.OccurrenceCount.Should().Be(1));
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].PathPrefix.Should().Be("/GetIt/v1/DirectReports/StandardId");
+        _ = summaries[0].TotalCount.Should().Be(0);
+        _ = summaries[0].OccurrenceCount.Should().Be(3);
     }
 
     [Fact]
@@ -116,12 +122,10 @@ public class GetGroupSummaries_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results);
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-        _ = summaries.Should().HaveCount(3);
-        
-        var validSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("ZEDPUWW"));
-        _ = validSummary.Should().NotBeNull();
-        _ = validSummary!.TotalCount.Should().Be(5);
-        _ = validSummary.OccurrenceCount.Should().Be(1);
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].PathPrefix.Should().Be("/GetIt/v1/DirectReports/StandardId");
+        _ = summaries[0].TotalCount.Should().Be(5);
+        _ = summaries[0].OccurrenceCount.Should().Be(3);
     }
 
     [Fact]
@@ -167,12 +171,13 @@ public class GetGroupSummaries_Should
             var grouped = ApiPathsCountService.GroupByPathPrefix(allResults);
             var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-            _ = summaries.Should().HaveCount(6);
-            _ = summaries.Should().AllSatisfy(s => s.OccurrenceCount.Should().Be(1));
+            // Two groups: StandardId and Name
+            _ = summaries.Should().HaveCount(2);
             
-            var zkdpuwwSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("ZKDPUWW"));
-            _ = zkdpuwwSummary.Should().NotBeNull();
-            _ = zkdpuwwSummary!.TotalCount.Should().Be(1);
+            var standardIdSummary = summaries.FirstOrDefault(s => s.PathPrefix == "/GetIt/v1/DirectReports/StandardId");
+            _ = standardIdSummary.Should().NotBeNull();
+            _ = standardIdSummary!.TotalCount.Should().Be(6);
+            _ = standardIdSummary.OccurrenceCount.Should().Be(3);
         }
         finally
         {
@@ -193,10 +198,10 @@ public class GetGroupSummaries_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results);
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-        _ = summaries.Should().HaveCount(3);
-        _ = summaries.Should().Contain(s => s.PathPrefix == "/api/v1/users/profile/settings/display");
-        _ = summaries.Should().Contain(s => s.PathPrefix == "/api/v1/users/profile/settings/privacy");
-        _ = summaries.Should().Contain(s => s.PathPrefix == "/api/v1/users/profile/settings/security");
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].PathPrefix.Should().Be("/api/v1/users/profile/settings");
+        _ = summaries[0].TotalCount.Should().Be(6);
+        _ = summaries[0].OccurrenceCount.Should().Be(3);
     }
 
     [Fact]
@@ -214,16 +219,15 @@ public class GetGroupSummaries_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results);
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
-        _ = summaries.Should().HaveCount(4);
+        _ = summaries.Should().HaveCount(3);
         
-        var pathASummary = summaries.FirstOrDefault(s => s.PathPrefix.EndsWith("/A"));
+        var pathASummary = summaries.FirstOrDefault(s => s.PathPrefix == "/GetIt/v1/DirectReports/StandardId");
         _ = pathASummary.Should().NotBeNull();
         _ = pathASummary!.TotalCount.Should().Be(30);
         _ = pathASummary.OccurrenceCount.Should().Be(2);
         
-        _ = summaries.Should().Contain(s => s.PathPrefix.EndsWith("User1") && s.TotalCount == 5 && s.OccurrenceCount == 1);
-        _ = summaries.Should().Contain(s => s.PathPrefix.EndsWith("User2") && s.TotalCount == 15 && s.OccurrenceCount == 1);
-        _ = summaries.Should().Contain(s => s.PathPrefix.EndsWith("Item1") && s.TotalCount == 100 && s.OccurrenceCount == 1);
+        _ = summaries.Should().Contain(s => s.PathPrefix == "/PostIt/v1/Users/Active" && s.TotalCount == 20 && s.OccurrenceCount == 2);
+        _ = summaries.Should().Contain(s => s.PathPrefix == "/DeleteIt/v1/Items/Old" && s.TotalCount == 100 && s.OccurrenceCount == 1);
     }
 
     [Fact]
@@ -241,9 +245,11 @@ public class GetGroupSummaries_Should
         var firstIteration = summaries.ToList();
         var secondIteration = summaries.ToList();
 
-        _ = firstIteration.Should().HaveCount(2);
-        _ = secondIteration.Should().HaveCount(2);
+        // Both group under "/GetIt/v1/DirectReports/StandardId" prefix
+        _ = firstIteration.Should().HaveCount(1);
+        _ = secondIteration.Should().HaveCount(1);
         _ = firstIteration[0].TotalCount.Should().Be(secondIteration[0].TotalCount);
+        _ = firstIteration[0].TotalCount.Should().Be(15);
     }
 
     [Fact]
@@ -369,7 +375,7 @@ public class GetGroupSummaries_Should
         var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
 
         _ = summaries.Should().HaveCount(1);
-        _ = summaries[0].PathPrefix.Should().Be("/api/test@special!chars#123");
+        _ = summaries[0].PathPrefix.Should().Be("/api");
         _ = summaries[0].TotalCount.Should().Be(30);
     }
 }
