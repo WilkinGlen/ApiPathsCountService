@@ -245,4 +245,131 @@ public class GetGroupSummaries_Should
         _ = secondIteration.Should().HaveCount(2);
         _ = firstIteration[0].TotalCount.Should().Be(secondIteration[0].TotalCount);
     }
+
+    [Fact]
+    public void HandleNegativeCounts_WhenCountsAreNegativeNumbers()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/test", "-10"),
+            new ApiPathResult("/api/test", "-20"),
+            new ApiPathResult("/api/test", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results);
+        var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].TotalCount.Should().Be(0);
+        _ = summaries[0].OccurrenceCount.Should().Be(3);
+    }
+
+    [Fact]
+    public void HandleVeryLargeNumbers_WhenCountsExceedIntMax()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/test", "999999999999999999"),
+            new ApiPathResult("/api/test", "10")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results);
+        var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].TotalCount.Should().Be(10);
+        _ = summaries[0].OccurrenceCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void HandleWhitespaceInCounts_WhenCountsContainSpaces()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/test", "  10  "),
+            new ApiPathResult("/api/test", " 20 "),
+            new ApiPathResult("/api/test", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results);
+        var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].TotalCount.Should().Be(60);
+        _ = summaries[0].OccurrenceCount.Should().Be(3);
+    }
+
+    [Fact]
+    public void HandleEmptyStringCounts_WhenCountsAreEmpty()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/test", ""),
+            new ApiPathResult("/api/test", "10"),
+            new ApiPathResult("/api/test", "")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results);
+        var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].TotalCount.Should().Be(10);
+        _ = summaries[0].OccurrenceCount.Should().Be(3);
+    }
+
+    [Fact]
+    public void HandleDecimalCounts_WhenCountsHaveDecimalPoints()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/test", "10.5"),
+            new ApiPathResult("/api/test", "20.9"),
+            new ApiPathResult("/api/test", "5")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results);
+        var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].TotalCount.Should().Be(5);
+        _ = summaries[0].OccurrenceCount.Should().Be(3);
+    }
+
+    [Fact]
+    public void CalculateCorrectly_WhenMixingValidAndInvalidCountFormats()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/test", "100"),
+            new ApiPathResult("/api/test", "abc"),
+            new ApiPathResult("/api/test", ""),
+            new ApiPathResult("/api/test", "50"),
+            new ApiPathResult("/api/test", "10.5"),
+            new ApiPathResult("/api/test", "-20")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results);
+        var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].TotalCount.Should().Be(130);
+        _ = summaries[0].OccurrenceCount.Should().Be(6);
+    }
+
+    [Fact]
+    public void PreservePathPrefix_WhenPathContainsSpecialCharacters()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/test@special!chars#123", "10"),
+            new ApiPathResult("/api/test@special!chars#123", "20")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results);
+        var summaries = ApiPathsCountService.GetGroupSummaries(grouped).ToList();
+
+        _ = summaries.Should().HaveCount(1);
+        _ = summaries[0].PathPrefix.Should().Be("/api/test@special!chars#123");
+        _ = summaries[0].TotalCount.Should().Be(30);
+    }
 }

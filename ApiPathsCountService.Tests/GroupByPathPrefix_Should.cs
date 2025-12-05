@@ -374,4 +374,175 @@ public class GroupByPathPrefix_Should
         var page1Group = grouped.FirstOrDefault(g => g.Key.Contains("page=1"));
         _ = page1Group!.Should().HaveCount(2);
     }
+
+    [Fact]
+    public void HandlePathsWithBackslashes_WhenPathsUseBackslashes()
+    {
+        var results = new[]
+        {
+            new ApiPathResult(@"\api\windows\path", "10"),
+            new ApiPathResult(@"\api\windows\path", "20"),
+            new ApiPathResult(@"\api\unix/mixed", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var windowsGroup = grouped.FirstOrDefault(g => g.Key.Contains(@"\api\windows\path"));
+        _ = windowsGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandlePathsWithOnlySlash_WhenPathIsRootSlash()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/", "10"),
+            new ApiPathResult("/", "20"),
+            new ApiPathResult("/api", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var rootGroup = grouped.FirstOrDefault(g => g.Key == "/");
+        _ = rootGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandlePathsWithMultipleSlashes_WhenPathsHaveConsecutiveSlashes()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api//double//slash", "10"),
+            new ApiPathResult("/api//double//slash", "20"),
+            new ApiPathResult("/api/single/slash", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var doubleSlashGroup = grouped.FirstOrDefault(g => g.Key.Contains("//"));
+        _ = doubleSlashGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandlePathsWithTrailingSlash_WhenPathsEndWithSlash()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/endpoint/", "10"),
+            new ApiPathResult("/api/endpoint/", "20"),
+            new ApiPathResult("/api/endpoint", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var trailingSlashGroup = grouped.FirstOrDefault(g => g.Key.EndsWith('/'));
+        _ = trailingSlashGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandleCaseSensitivePaths_WhenPathsDifferInCase()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/API/Users", "10"),
+            new ApiPathResult("/api/users", "20"),
+            new ApiPathResult("/api/users", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var lowercaseGroup = grouped.FirstOrDefault(g => g.Key == "/api/users");
+        _ = lowercaseGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandlePathsWithSpaces_WhenPathsContainSpaces()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/path with spaces", "10"),
+            new ApiPathResult("/api/path with spaces", "20"),
+            new ApiPathResult("/api/path_with_underscores", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var spacesGroup = grouped.FirstOrDefault(g => g.Key.Contains(" "));
+        _ = spacesGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandleSingleCharacterPaths_WhenPathsAreVeryShort()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("a", "10"),
+            new ApiPathResult("a", "20"),
+            new ApiPathResult("b", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var aGroup = grouped.FirstOrDefault(g => g.Key == "a");
+        _ = aGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandleVeryLongPaths_WhenPathsExceedTypicalLength()
+    {
+        var longPath = "/api/" + string.Join("/", Enumerable.Range(1, 100).Select(i => $"seg{i}"));
+        var results = new[]
+        {
+            new ApiPathResult(longPath, "10"),
+            new ApiPathResult(longPath, "20"),
+            new ApiPathResult("/short", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var longGroup = grouped.FirstOrDefault(g => g.Key.Contains("seg100"));
+        _ = longGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandlePathsWithOnlyNumbers_WhenPathsAreNumeric()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/123/456/789", "10"),
+            new ApiPathResult("/123/456/789", "20"),
+            new ApiPathResult("/999/888/777", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var numericGroup = grouped.FirstOrDefault(g => g.Key.Contains("123"));
+        _ = numericGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandlePathsWithDots_WhenPathsContainFilenames()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/file.txt", "10"),
+            new ApiPathResult("/api/file.txt", "20"),
+            new ApiPathResult("/api/file.json", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var txtGroup = grouped.FirstOrDefault(g => g.Key.Contains("file.txt"));
+        _ = txtGroup!.Should().HaveCount(2);
+    }
 }

@@ -383,4 +383,210 @@ public class LoadFromFileAsync_Should
             File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public async Task HandleLargeJsonFile_WhenFileContainsManyResults()
+    {
+        var tempFile = Path.GetTempFileName();
+        var results = new System.Text.StringBuilder("{\"results\":[");
+        for (int i = 0; i < 1000; i++)
+        {
+            if (i > 0) results.Append(',');
+            results.Append($"{{\"preview\":false,\"result\":{{\"Path\":\"/api/path{i}\",\"Count\":\"{i}\"}}}}");
+        }
+        results.Append("]}");
+
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, results.ToString());
+
+            var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(1000);
+            _ = result.Results[0].Result.Path.Should().Be("/api/path0");
+            _ = result.Results[999].Result.Path.Should().Be("/api/path999");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleUnicodeCharacters_WhenPathsContainUnicode()
+    {
+        var tempFile = Path.GetTempFileName();
+        var unicodeJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/用户/データ","Count":"10"}},
+                {"preview":false,"result":{"Path":"/api/utilisateurs/données","Count":"20"}},
+                {"preview":false,"result":{"Path":"/api/пользователи/данные","Count":"30"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, unicodeJson);
+
+            var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(3);
+            _ = result.Results[0].Result.Path.Should().Contain("用户");
+            _ = result.Results[1].Result.Path.Should().Contain("données");
+            _ = result.Results[2].Result.Path.Should().Contain("данные");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleSpecialCharactersInPaths_WhenPathsContainSymbols()
+    {
+        var tempFile = Path.GetTempFileName();
+        var specialCharsJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/test@email.com/data","Count":"10"}},
+                {"preview":false,"result":{"Path":"/api/file(copy).txt","Count":"20"}},
+                {"preview":false,"result":{"Path":"/api/price$100","Count":"30"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, specialCharsJson);
+
+            var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(3);
+            _ = result.Results[0].Result.Path.Should().Contain("@email.com");
+            _ = result.Results[1].Result.Path.Should().Contain("(copy)");
+            _ = result.Results[2].Result.Path.Should().Contain("$100");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleVeryLongPaths_WhenPathsAreLong()
+    {
+        var tempFile = Path.GetTempFileName();
+        var longPath = "/api/" + string.Join("/", Enumerable.Range(1, 50).Select(i => $"segment{i}"));
+        var longPathJson = "{\"results\":[{\"preview\":false,\"result\":{\"Path\":\"" + longPath + "\",\"Count\":\"100\"}}]}";
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, longPathJson);
+
+            var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(1);
+            _ = result.Results[0].Result.Path.Should().Contain("segment1");
+            _ = result.Results[0].Result.Path.Should().Contain("segment50");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleEmptyFile_WhenFileIsEmpty()
+    {
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, string.Empty);
+
+            var act = async () => await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = await act.Should().ThrowAsync<Exception>();
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleWhitespaceOnlyFile_WhenFileContainsOnlyWhitespace()
+    {
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, "   \n\t  ");
+
+            var act = async () => await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = await act.Should().ThrowAsync<Exception>();
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleNullCounts_WhenCountsAreMissing()
+    {
+        var tempFile = Path.GetTempFileName();
+        var nullCountJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/test","Count":null}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, nullCountJson);
+
+            var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(1);
+            _ = result.Results[0].Result.Count.Should().BeNull();
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleExtraProperties_WhenJsonHasAdditionalFields()
+    {
+        var tempFile = Path.GetTempFileName();
+        var extraPropsJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/test","Count":"10"},"extraField":"ignored"}
+            ],
+            "metadata":"ignored",
+            "version":"1.0"
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, extraPropsJson);
+
+            var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
+
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(1);
+            _ = result.Results[0].Result.Path.Should().Be("/api/test");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
 }

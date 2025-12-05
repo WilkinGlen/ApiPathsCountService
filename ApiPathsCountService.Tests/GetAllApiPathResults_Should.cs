@@ -254,4 +254,149 @@ public class GetAllApiPathResults_Should
         _ = results[0].Path.Should().Contain("page=");
         _ = results[1].Path.Should().Contain("offset=");
     }
+
+    [Fact]
+    public void HandleNullCounts_WhenCountsAreNull()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/test", null!)),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/test2", "10"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Count.Should().BeNull();
+        _ = results[1].Count.Should().Be("10");
+    }
+
+    [Fact]
+    public void HandleEmptyPaths_WhenPathsAreEmptyStrings()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("", "10")),
+            new ApiPathResultWrapper(false, new ApiPathResult("", "20"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results.Should().AllSatisfy(r => r.Path.Should().BeEmpty());
+    }
+
+    [Fact]
+    public void HandleVeryLargeCollection_WhenResponseHasManyResults()
+    {
+        var wrappers = Enumerable.Range(1, 10000)
+            .Select(i => new ApiPathResultWrapper(false, new ApiPathResult($"/api/path{i}", $"{i}")))
+            .ToArray();
+        var response = new ApiPathsResponse(wrappers);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(10000);
+        _ = results[0].Path.Should().Be("/api/path1");
+        _ = results[9999].Path.Should().Be("/api/path10000");
+    }
+
+    [Fact]
+    public void HandleDuplicatePaths_WhenPathsAreIdentical()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/same/path", "1")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/same/path", "2")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/same/path", "3"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(3);
+        _ = results.Should().AllSatisfy(r => r.Path.Should().Be("/same/path"));
+        _ = results.Select(r => r.Count).Should().BeEquivalentTo(["1", "2", "3"]);
+    }
+
+    [Fact]
+    public void HandleUnicodePaths_WhenPathsContainNonAsciiCharacters()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/??/??", "10")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/??????/??????", "20")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/????????????/??????", "30"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(3);
+        _ = results[0].Path.Should().Contain("??");
+        _ = results[1].Path.Should().Contain("??????");
+        _ = results[2].Path.Should().Contain("????????????");
+    }
+
+    [Fact]
+    public void HandleSpecialCharacters_WhenPathsContainSymbols()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/@user!name#123$test", "10")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/price(99%)&tax", "20"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Path.Should().Contain("@user!name#123$test");
+        _ = results[1].Path.Should().Contain("(99%)&tax");
+    }
+
+    [Fact]
+    public void HandleWhitespaceInPaths_WhenPathsContainSpaces()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/path with spaces", "10")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/  multiple  spaces  ", "20"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Path.Should().Contain(" with ");
+        _ = results[1].Path.Should().Contain("  multiple  ");
+    }
+
+    [Fact]
+    public void RetainOriginalPathCasing_WhenPathsHaveMixedCase()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/API/Users/Profile", "10")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/USERS/profile", "20"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Path.Should().Be("/API/Users/Profile");
+        _ = results[1].Path.Should().Be("/api/USERS/profile");
+    }
+
+    [Fact]
+    public void HandleCountsWithLeadingZeros_WhenCountsHaveZeroPrefix()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/test", "007")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/test2", "0100"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Count.Should().Be("007");
+        _ = results[1].Count.Should().Be("0100");
+    }
 }

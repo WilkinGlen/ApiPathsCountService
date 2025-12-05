@@ -1100,4 +1100,242 @@ public class ApiPathsCountServiceIntegration_Should
             File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public async Task HandleStressTest_WhenProcessingThousandsOfPaths()
+    {
+        var tempFile = Path.GetTempFileName();
+        var results = new System.Text.StringBuilder("{\"results\":[");
+        for (int i = 0; i < 5000; i++)
+        {
+            if (i > 0) results.Append(',');
+            var path = $"/api/path{i % 100}/item{i}";
+            results.Append($"{{\"preview\":false,\"result\":{{\"Path\":\"{path}\",\"Count\":\"{i % 10}\"}}}}");
+        }
+        results.Append("]}");
+
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, results.ToString());
+
+            var summaries = ApiPathsCountService.GetGroupSummaries(
+                ApiPathsCountService.GroupByPathPrefix(
+                    ApiPathsCountService.GetAllApiPathResults(
+                        (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
+
+            _ = summaries.Should().HaveCount(5000);
+            _ = summaries.Sum(s => s.OccurrenceCount).Should().Be(5000);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleUnicodePaths_WhenProcessingInternationalCharacters()
+    {
+        var tempFile = Path.GetTempFileName();
+        var testJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/??/??","Count":"10"}},
+                {"preview":false,"result":{"Path":"/api/??/??","Count":"20"}},
+                {"preview":false,"result":{"Path":"/api/????????????/??????","Count":"30"}},
+                {"preview":false,"result":{"Path":"/api/??????/??????","Count":"40"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, testJson);
+
+            var summaries = ApiPathsCountService.GetGroupSummaries(
+                ApiPathsCountService.GroupByPathPrefix(
+                    ApiPathsCountService.GetAllApiPathResults(
+                        (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
+
+            _ = summaries.Should().HaveCount(3);
+            var chineseSummary = summaries.FirstOrDefault(s => s.PathPrefix.Contains("??"));
+            _ = chineseSummary!.TotalCount.Should().Be(30);
+            _ = chineseSummary.OccurrenceCount.Should().Be(2);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleEdgeCaseCounts_WhenCountsHaveVariousFormats()
+    {
+        var tempFile = Path.GetTempFileName();
+        var testJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/test","Count":"100"}},
+                {"preview":false,"result":{"Path":"/api/test","Count":"abc"}},
+                {"preview":false,"result":{"Path":"/api/test","Count":""}},
+                {"preview":false,"result":{"Path":"/api/test","Count":"  50  "}},
+                {"preview":false,"result":{"Path":"/api/test","Count":"10.5"}},
+                {"preview":false,"result":{"Path":"/api/test","Count":"-20"}},
+                {"preview":false,"result":{"Path":"/api/test","Count":"999999999999999"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, testJson);
+
+            var summaries = ApiPathsCountService.GetGroupSummaries(
+                ApiPathsCountService.GroupByPathPrefix(
+                    ApiPathsCountService.GetAllApiPathResults(
+                        (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
+
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].OccurrenceCount.Should().Be(7);
+            _ = summaries[0].TotalCount.Should().BeGreaterOrEqualTo(100);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleMixedPathFormats_WhenProcessingDiversePaths()
+    {
+        var tempFile = Path.GetTempFileName();
+        var testJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/","Count":"10"}},
+                {"preview":false,"result":{"Path":"single","Count":"20"}},
+                {"preview":false,"result":{"Path":"/api//double//slash","Count":"30"}},
+                {"preview":false,"result":{"Path":"/path with spaces","Count":"40"}},
+                {"preview":false,"result":{"Path":"/UPPERCASE/path","Count":"50"}},
+                {"preview":false,"result":{"Path":"/UPPERCASE/path","Count":"60"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, testJson);
+
+            var summaries = ApiPathsCountService.GetGroupSummaries(
+                ApiPathsCountService.GroupByPathPrefix(
+                    ApiPathsCountService.GetAllApiPathResults(
+                        (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
+
+            _ = summaries.Should().HaveCount(5);
+            var uppercaseGroup = summaries.FirstOrDefault(s => s.PathPrefix.Contains("UPPERCASE"));
+            _ = uppercaseGroup!.TotalCount.Should().Be(110);
+            _ = uppercaseGroup.OccurrenceCount.Should().Be(2);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandleAllInvalidCounts_WhenNoValidCountsExist()
+    {
+        var tempFile = Path.GetTempFileName();
+        var testJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/test","Count":"invalid"}},
+                {"preview":false,"result":{"Path":"/api/test","Count":"not-a-number"}},
+                {"preview":false,"result":{"Path":"/api/test","Count":"abc123"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, testJson);
+
+            var summaries = ApiPathsCountService.GetGroupSummaries(
+                ApiPathsCountService.GroupByPathPrefix(
+                    ApiPathsCountService.GetAllApiPathResults(
+                        (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
+
+            _ = summaries.Should().HaveCount(1);
+            _ = summaries[0].TotalCount.Should().Be(0);
+            _ = summaries[0].OccurrenceCount.Should().Be(3);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task HandlePathsWithOnlySpecialCharacters_WhenProcessingSymbols()
+    {
+        var tempFile = Path.GetTempFileName();
+        var testJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"@#$%^&*()","Count":"10"}},
+                {"preview":false,"result":{"Path":"@#$%^&*()","Count":"20"}},
+                {"preview":false,"result":{"Path":"!@#$%","Count":"30"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, testJson);
+
+            var summaries = ApiPathsCountService.GetGroupSummaries(
+                ApiPathsCountService.GroupByPathPrefix(
+                    ApiPathsCountService.GetAllApiPathResults(
+                        (await ApiPathsCountService.LoadFromFileAsync(tempFile))!))).ToList();
+
+            _ = summaries.Should().HaveCount(2);
+            var specialGroup = summaries.FirstOrDefault(s => s.PathPrefix.Contains("@#$%^&*()"));
+            _ = specialGroup!.TotalCount.Should().Be(30);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task ChainWithComplexFiltering_WhenApplyingMultipleConditions()
+    {
+        var tempFile = Path.GetTempFileName();
+        var testJson = """
+        {
+            "results":[
+                {"preview":false,"result":{"Path":"/api/v1/high/priority","Count":"1000"}},
+                {"preview":false,"result":{"Path":"/api/v1/high/priority","Count":"2000"}},
+                {"preview":false,"result":{"Path":"/api/v1/low/priority","Count":"10"}},
+                {"preview":false,"result":{"Path":"/api/v2/high/priority","Count":"500"}},
+                {"preview":false,"result":{"Path":"/api/v2/low/priority","Count":"5"}}
+            ]
+        }
+        """;
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, testJson);
+
+            var filteredSummaries = ApiPathsCountService.GetGroupSummaries(
+                    ApiPathsCountService.GroupByPathPrefix(
+                        ApiPathsCountService.GetAllApiPathResults(
+                            (await ApiPathsCountService.LoadFromFileAsync(tempFile))!)))
+                .Where(s => s.PathPrefix.Contains("v1") && s.PathPrefix.Contains("high"))
+                .OrderByDescending(s => s.TotalCount)
+                .ToList();
+
+            _ = filteredSummaries.Should().HaveCount(1);
+            _ = filteredSummaries[0].TotalCount.Should().Be(3000);
+            _ = filteredSummaries[0].OccurrenceCount.Should().Be(2);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
 }
