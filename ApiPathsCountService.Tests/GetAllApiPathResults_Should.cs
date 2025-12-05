@@ -155,4 +155,103 @@ public class GetAllApiPathResults_Should
         _ = results[2].Path.Should().Be("/third");
         _ = results[3].Path.Should().Be("/fourth");
     }
+
+    [Fact]
+    public void ExtractQueryStringPaths_WhenResponseContainsQueryParameters()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/search?q=test&limit=10", "50")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/filter?category=books", "100"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Path.Should().Contain("?q=test");
+        _ = results[1].Path.Should().Contain("category=books");
+    }
+
+    [Fact]
+    public void ExtractGuidPaths_WhenResponseContainsGuidIdentifiers()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/sessions/550e8400-e29b-41d4-a716-446655440000", "25")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/tokens/123e4567-e89b-12d3-a456-426614174000", "100"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results.Should().AllSatisfy(r => r.Path.Should().MatchRegex(@"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"));
+    }
+
+    [Fact]
+    public void ExtractVersionedPaths_WhenResponseContainsApiVersions()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/v1/users/list", "100")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/v2/users/list", "200")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/v3/users/list", "300"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(3);
+        _ = results.Should().Contain(r => r.Path.Contains("/v1/"));
+        _ = results.Should().Contain(r => r.Path.Contains("/v2/"));
+        _ = results.Should().Contain(r => r.Path.Contains("/v3/"));
+    }
+
+    [Fact]
+    public void ExtractLocalePaths_WhenResponseContainsLanguageCodes()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/content/en-US/articles", "100")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/content/fr-FR/articles", "80")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/content/de-DE/articles", "90"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(3);
+        _ = results.Should().Contain(r => r.Path.Contains("en-US"));
+        _ = results.Should().Contain(r => r.Path.Contains("fr-FR"));
+        _ = results.Should().Contain(r => r.Path.Contains("de-DE"));
+    }
+
+    [Fact]
+    public void ExtractNestedResourcePaths_WhenResponseContainsHierarchy()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/companies/123/departments/456/employees", "50")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/schools/ABC/classes/101/students", "25"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Path.Split('/').Should().HaveCountGreaterThan(5);
+        _ = results[1].Path.Split('/').Should().HaveCountGreaterThan(5);
+    }
+
+    [Fact]
+    public void ExtractPaginationPaths_WhenResponseContainsPagingParameters()
+    {
+        var response = new ApiPathsResponse(
+        [
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/items?page=1&size=50", "1000")),
+            new ApiPathResultWrapper(false, new ApiPathResult("/api/users?offset=0&limit=25", "300"))
+        ]);
+
+        var results = ApiPathsCountService.GetAllApiPathResults(response).ToList();
+
+        _ = results.Should().HaveCount(2);
+        _ = results[0].Path.Should().Contain("page=");
+        _ = results[1].Path.Should().Contain("offset=");
+    }
 }

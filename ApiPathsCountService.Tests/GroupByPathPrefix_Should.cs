@@ -202,4 +202,176 @@ public class GroupByPathPrefix_Should
         _ = grouped.Should().HaveCount(2);
         _ = grouped.Should().AllSatisfy(g => g.Should().HaveCount(2));
     }
+
+    [Fact]
+    public void GroupQueryStringPaths_WhenPathsHaveQueryParameters()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/search?q=test&limit=10", "50"),
+            new ApiPathResult("/api/search?q=test&limit=10", "75"),
+            new ApiPathResult("/api/search?q=demo&limit=20", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var testGroup = grouped.FirstOrDefault(g => g.Key.Contains("q=test"));
+        _ = testGroup.Should().NotBeNull();
+        _ = testGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupGuidPaths_WhenPathsContainGuids()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/sessions/550e8400-e29b-41d4-a716-446655440000", "25"),
+            new ApiPathResult("/api/sessions/550e8400-e29b-41d4-a716-446655440000", "35"),
+            new ApiPathResult("/api/sessions/7c9e6679-7425-40de-944b-e07fc1f90ae7", "45")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var firstSessionGroup = grouped.FirstOrDefault(g => g.Key.Contains("550e8400"));
+        _ = firstSessionGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupVersionedPaths_WhenPathsHaveDifferentVersions()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/v1/users/list", "100"),
+            new ApiPathResult("/api/v1/users/list", "50"),
+            new ApiPathResult("/api/v2/users/list", "200"),
+            new ApiPathResult("/api/v3/users/list", "300")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(3);
+        var v1Group = grouped.FirstOrDefault(g => g.Key.Contains("/v1/"));
+        _ = v1Group!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupMatrixParameterPaths_WhenPathsUseMatrixNotation()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/products;color=red;size=large", "30"),
+            new ApiPathResult("/api/products;color=red;size=large", "45"),
+            new ApiPathResult("/api/products;color=blue;size=medium", "25")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var redLargeGroup = grouped.FirstOrDefault(g => g.Key.Contains("red") && g.Key.Contains("large"));
+        _ = redLargeGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupFragmentPaths_WhenPathsIncludeFragments()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/documents/doc123#section1", "12"),
+            new ApiPathResult("/api/documents/doc123#section1", "18"),
+            new ApiPathResult("/api/documents/doc123#section2", "25")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var section1Group = grouped.FirstOrDefault(g => g.Key.Contains("#section1"));
+        _ = section1Group!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupNestedResourcePaths_WhenPathsHaveHierarchy()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/companies/123/departments/456/employees", "50"),
+            new ApiPathResult("/api/companies/123/departments/456/employees", "75"),
+            new ApiPathResult("/api/companies/123/departments/789/employees", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var dept456Group = grouped.FirstOrDefault(g => g.Key.Contains("456"));
+        _ = dept456Group!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupLocalePaths_WhenPathsContainLanguageCodes()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/content/en-US/articles", "100"),
+            new ApiPathResult("/api/content/en-US/articles", "150"),
+            new ApiPathResult("/api/content/fr-FR/articles", "80")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var enUsGroup = grouped.FirstOrDefault(g => g.Key.Contains("en-US"));
+        _ = enUsGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupDatePaths_WhenPathsContainDateParameters()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/reports/2024-01-01/2024-01-31", "500"),
+            new ApiPathResult("/api/reports/2024-01-01/2024-01-31", "750"),
+            new ApiPathResult("/api/reports/2024-02-01/2024-02-29", "600")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var januaryGroup = grouped.FirstOrDefault(g => g.Key.Contains("2024-01-01"));
+        _ = januaryGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupEncodedPaths_WhenPathsUseUrlEncoding()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/search?q=hello%20world", "40"),
+            new ApiPathResult("/api/search?q=hello%20world", "60"),
+            new ApiPathResult("/api/search?q=test%26demo", "30")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var helloWorldGroup = grouped.FirstOrDefault(g => g.Key.Contains("hello%20world"));
+        _ = helloWorldGroup!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void GroupPaginationPaths_WhenPathsContainPageInfo()
+    {
+        var results = new[]
+        {
+            new ApiPathResult("/api/items?page=1&size=50", "1000"),
+            new ApiPathResult("/api/items?page=1&size=50", "500"),
+            new ApiPathResult("/api/items?page=2&size=50", "800")
+        };
+
+        var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
+
+        _ = grouped.Should().HaveCount(2);
+        var page1Group = grouped.FirstOrDefault(g => g.Key.Contains("page=1"));
+        _ = page1Group!.Should().HaveCount(2);
+    }
 }
