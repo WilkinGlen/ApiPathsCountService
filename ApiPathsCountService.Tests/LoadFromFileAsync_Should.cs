@@ -389,12 +389,17 @@ public class LoadFromFileAsync_Should
     {
         var tempFile = Path.GetTempFileName();
         var results = new System.Text.StringBuilder("{\"results\":[");
-        for (int i = 0; i < 1000; i++)
+        for (var i = 0; i < 1000; i++)
         {
-            if (i > 0) results.Append(',');
-            results.Append($"{{\"preview\":false,\"result\":{{\"Path\":\"/api/path{i}\",\"Count\":\"{i}\"}}}}");
+            if (i > 0)
+            {
+                _ = results.Append(',');
+            }
+
+            _ = results.Append($"{{\"preview\":false,\"result\":{{\"Path\":\"/api/path{i}\",\"Count\":\"{i}\"}}}}");
         }
-        results.Append("]}");
+
+        _ = results.Append("]}");
 
         try
         {

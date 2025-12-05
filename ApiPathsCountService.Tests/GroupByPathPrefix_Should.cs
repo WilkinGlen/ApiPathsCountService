@@ -473,7 +473,7 @@ public class GroupByPathPrefix_Should
         var grouped = ApiPathsCountService.GroupByPathPrefix(results).ToList();
 
         _ = grouped.Should().HaveCount(2);
-        var spacesGroup = grouped.FirstOrDefault(g => g.Key.Contains(" "));
+        var spacesGroup = grouped.FirstOrDefault(g => g.Key.Contains(' '));
         _ = spacesGroup!.Should().HaveCount(2);
     }
 

@@ -885,7 +885,7 @@ public class ApiPathsCountServiceIntegration_Should
                 ApiPathsCountService.GroupByPathPrefix(
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!)))
-                .GroupBy(s => s.PathPrefix.Split('/').Last())
+                .GroupBy(s => s.PathPrefix.Split('/')[^1])
                 .Select(g => new
                 {
                     Action = g.Key,
@@ -1106,13 +1106,18 @@ public class ApiPathsCountServiceIntegration_Should
     {
         var tempFile = Path.GetTempFileName();
         var results = new System.Text.StringBuilder("{\"results\":[");
-        for (int i = 0; i < 5000; i++)
+        for (var i = 0; i < 5000; i++)
         {
-            if (i > 0) results.Append(',');
+            if (i > 0)
+            {
+                _ = results.Append(',');
+            }
+
             var path = $"/api/path{i % 100}/item{i}";
-            results.Append($"{{\"preview\":false,\"result\":{{\"Path\":\"{path}\",\"Count\":\"{i % 10}\"}}}}");
+            _ = results.Append($"{{\"preview\":false,\"result\":{{\"Path\":\"{path}\",\"Count\":\"{i % 10}\"}}}}");
         }
-        results.Append("]}");
+        
+        _ = results.Append("]}");
 
         try
         {
