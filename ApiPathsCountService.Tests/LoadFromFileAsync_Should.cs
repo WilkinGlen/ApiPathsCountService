@@ -3,7 +3,7 @@ using FluentAssertions;
 
 namespace ApiPathsCountService.Tests;
 
-public class ApiPathsCountServiceTests
+public class LoadFromFileAsync_Should
 {
     private const string TestJsonContent = """
     {
@@ -19,7 +19,7 @@ public class ApiPathsCountServiceTests
     """;
 
     [Fact]
-    public async Task LoadFromFileAsync_ValidJsonFile_ReturnsPopulatedResponse()
+    public async Task ReturnPopulatedResponse_WhenValidJsonFile()
     {
         var tempFile = Path.GetTempFileName();
         try
@@ -28,9 +28,9 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
-            result!.Results.Should().NotBeNull();
-            result.Results.Should().HaveCount(6);
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().NotBeNull();
+            _ = result.Results.Should().HaveCount(6);
         }
         finally
         {
@@ -39,7 +39,7 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_ValidJsonFile_CorrectlyDeserializesFirstResult()
+    public async Task CorrectlyDeserializeFirstResult_WhenValidJsonFile()
     {
         var tempFile = Path.GetTempFileName();
         try
@@ -48,12 +48,12 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
+            _ = result.Should().NotBeNull();
             var firstResult = result!.Results[0];
-            firstResult.Preview.Should().BeFalse();
-            firstResult.Result.Should().NotBeNull();
-            firstResult.Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZKDPUWW");
-            firstResult.Result.Count.Should().Be("1");
+            _ = firstResult.Preview.Should().BeFalse();
+            _ = firstResult.Result.Should().NotBeNull();
+            _ = firstResult.Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZKDPUWW");
+            _ = firstResult.Result.Count.Should().Be("1");
         }
         finally
         {
@@ -62,7 +62,7 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_ValidJsonFile_CorrectlyDeserializesAllCounts()
+    public async Task CorrectlyDeserializeAllCounts_WhenValidJsonFile()
     {
         var tempFile = Path.GetTempFileName();
         try
@@ -71,13 +71,13 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
-            result!.Results[0].Result.Count.Should().Be("1");
-            result.Results[1].Result.Count.Should().Be("2");
-            result.Results[2].Result.Count.Should().Be("3");
-            result.Results[3].Result.Count.Should().Be("1");
-            result.Results[4].Result.Count.Should().Be("1");
-            result.Results[5].Result.Count.Should().Be("1");
+            _ = result.Should().NotBeNull();
+            _ = result!.Results[0].Result.Count.Should().Be("1");
+            _ = result.Results[1].Result.Count.Should().Be("2");
+            _ = result.Results[2].Result.Count.Should().Be("3");
+            _ = result.Results[3].Result.Count.Should().Be("1");
+            _ = result.Results[4].Result.Count.Should().Be("1");
+            _ = result.Results[5].Result.Count.Should().Be("1");
         }
         finally
         {
@@ -86,7 +86,7 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_ValidJsonFile_CorrectlyDeserializesAllPaths()
+    public async Task CorrectlyDeserializeAllPaths_WhenValidJsonFile()
     {
         var tempFile = Path.GetTempFileName();
         try
@@ -95,13 +95,13 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
-            result!.Results[0].Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZKDPUWW");
-            result.Results[1].Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZEDPUWW");
-            result.Results[2].Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZFDPUWW");
-            result.Results[3].Result.Path.Should().Be("/GetIt/v1/DirectReports/Name/Glen");
-            result.Results[4].Result.Path.Should().Be("/GetIt/v1/DirectReports/Name/Marcus");
-            result.Results[5].Result.Path.Should().Be("/GetIt/v1/DirectReports/Name/Luke");
+            _ = result.Should().NotBeNull();
+            _ = result!.Results[0].Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZKDPUWW");
+            _ = result.Results[1].Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZEDPUWW");
+            _ = result.Results[2].Result.Path.Should().Be("/GetIt/v1/DirectReports/StandardId/ZFDPUWW");
+            _ = result.Results[3].Result.Path.Should().Be("/GetIt/v1/DirectReports/Name/Glen");
+            _ = result.Results[4].Result.Path.Should().Be("/GetIt/v1/DirectReports/Name/Marcus");
+            _ = result.Results[5].Result.Path.Should().Be("/GetIt/v1/DirectReports/Name/Luke");
         }
         finally
         {
@@ -110,7 +110,7 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_ValidJsonFile_AllPreviewFlagsAreFalse()
+    public async Task HaveAllPreviewFlagsFalse_WhenValidJsonFile()
     {
         var tempFile = Path.GetTempFileName();
         try
@@ -119,8 +119,8 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
-            result!.Results.Should().AllSatisfy(r => r.Preview.Should().BeFalse());
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().AllSatisfy(r => r.Preview.Should().BeFalse());
         }
         finally
         {
@@ -129,7 +129,7 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_EmptyResultsArray_ReturnsEmptyArray()
+    public async Task ReturnEmptyArray_WhenEmptyResultsArray()
     {
         var tempFile = Path.GetTempFileName();
         var emptyJson = """{"results":[]}""";
@@ -139,9 +139,9 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
-            result!.Results.Should().NotBeNull();
-            result.Results.Should().BeEmpty();
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().NotBeNull();
+            _ = result.Results.Should().BeEmpty();
         }
         finally
         {
@@ -150,7 +150,7 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_InvalidJson_ThrowsException()
+    public async Task ThrowException_WhenInvalidJson()
     {
         var tempFile = Path.GetTempFileName();
         var invalidJson = """{"invalid json""";
@@ -160,7 +160,7 @@ public class ApiPathsCountServiceTests
 
             var act = async () => await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            await act.Should().ThrowAsync<Exception>();
+            _ = await act.Should().ThrowAsync<Exception>();
         }
         finally
         {
@@ -169,17 +169,17 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_NonExistentFile_ThrowsFileNotFoundException()
+    public async Task ThrowFileNotFoundException_WhenNonExistentFile()
     {
         var nonExistentFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".json");
 
         var act = async () => await ApiPathsCountService.LoadFromFileAsync(nonExistentFile);
 
-        await act.Should().ThrowAsync<FileNotFoundException>();
+        _ = await act.Should().ThrowAsync<FileNotFoundException>();
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_CaseInsensitivePropertyNames_DeserializesCorrectly()
+    public async Task DeserializeCorrectly_WhenCaseInsensitivePropertyNames()
     {
         var tempFile = Path.GetTempFileName();
         var mixedCaseJson = """
@@ -195,11 +195,11 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
-            result!.Results.Should().HaveCount(1);
-            result.Results[0].Preview.Should().BeTrue();
-            result.Results[0].Result.Path.Should().Be("/test/path");
-            result.Results[0].Result.Count.Should().Be("99");
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(1);
+            _ = result.Results[0].Preview.Should().BeTrue();
+            _ = result.Results[0].Result.Path.Should().Be("/test/path");
+            _ = result.Results[0].Result.Count.Should().Be("99");
         }
         finally
         {
@@ -208,7 +208,7 @@ public class ApiPathsCountServiceTests
     }
 
     [Fact]
-    public async Task LoadFromFileAsync_MixedPreviewValues_DeserializesCorrectly()
+    public async Task DeserializeCorrectly_WhenMixedPreviewValues()
     {
         var tempFile = Path.GetTempFileName();
         var mixedPreviewJson = """
@@ -226,11 +226,11 @@ public class ApiPathsCountServiceTests
 
             var result = await ApiPathsCountService.LoadFromFileAsync(tempFile);
 
-            result.Should().NotBeNull();
-            result!.Results.Should().HaveCount(3);
-            result.Results[0].Preview.Should().BeFalse();
-            result.Results[1].Preview.Should().BeTrue();
-            result.Results[2].Preview.Should().BeFalse();
+            _ = result.Should().NotBeNull();
+            _ = result!.Results.Should().HaveCount(3);
+            _ = result.Results[0].Preview.Should().BeFalse();
+            _ = result.Results[1].Preview.Should().BeTrue();
+            _ = result.Results[2].Preview.Should().BeFalse();
         }
         finally
         {
