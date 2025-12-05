@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ApiPathsCountService.Tests/ApiPathsCountService.Tests.csproj" />
+  <Project Path="ApiPathsCountService/ApiPathsCountService.csproj" />
+</Solution>
