@@ -915,7 +915,7 @@ public class ApiPathsCountServiceIntegration_Should
                 ApiPathsCountService.GroupByPathPrefix(
                     ApiPathsCountService.GetAllApiPathResults(
                         (await ApiPathsCountService.LoadFromFileAsync(tempFile))!)))
-            .GroupBy(s => s.PathPrefix.Split('/')[s.PathPrefix.Split('/').Length - 1])
+            .GroupBy(s => s.PathPrefix.Split('/')[^1])
             .Select(g => new
             {
                 Action = g.Key,
