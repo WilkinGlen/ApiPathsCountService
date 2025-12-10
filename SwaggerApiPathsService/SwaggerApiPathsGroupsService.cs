@@ -2,8 +2,17 @@
 
 using SwaggerApiPathsService.Models;
 
+/// <summary>
+/// Provides methods for grouping and summarizing Swagger API entries by endpoint prefixes.
+/// </summary>
 public static class SwaggerApiPathsGroupsService
 {
+    /// <summary>
+    /// Gets endpoint group summaries by matching swagger API entries to endpoint prefixes.
+    /// </summary>
+    /// <param name="swaggerApiEntries">The swagger API entries containing actual called paths and counts.</param>
+    /// <param name="apiEndpoints">The API endpoint definitions with signature patterns.</param>
+    /// <returns>A collection of summaries grouped by endpoint prefix.</returns>
     public static IEnumerable<EndpointGroupSummary> GetEndpointGroupSummaries(
         IEnumerable<SwaggerApiEntry> swaggerApiEntries,
         IEnumerable<ApiEndpoint> apiEndpoints)
@@ -23,39 +32,47 @@ public static class SwaggerApiPathsGroupsService
         IEnumerable<SwaggerApiEntry> swaggerApiEntries,
         List<string> prefixes)
     {
-        var initialAggregates = prefixes.ToDictionary(
+        var aggregates = prefixes.ToDictionary(
             prefix => prefix,
             _ => (Count: 0, NumberOfEndpoints: 0),
             StringComparer.OrdinalIgnoreCase);
 
-        return swaggerApiEntries
-            .Where(entry => entry.Result.Path is not null)
-            .Select(entry => (Path: entry.Result.Path!, entry.Result.Count))
-            .Select(entry => (Prefix: FindMatchingPrefix(entry.Path, prefixes), entry.Count))
-            .Where(match => match.Prefix is not null)
-            .Aggregate(initialAggregates, (aggregates, match) =>
+        foreach (var entry in swaggerApiEntries)
+        {
+            if (entry.Result.Path is not { } path)
             {
-                var (Count, NumberOfEndpoints) = aggregates[match.Prefix!];
-                aggregates[match.Prefix!] = (Count: Count + match.Count, NumberOfEndpoints: NumberOfEndpoints + 1);
-                return aggregates;
-            });
+                continue;
+            }
+
+            if (FindMatchingPrefix(path, prefixes) is { } matchedPrefix)
+            {
+                var (count, numberOfEndpoints) = aggregates[matchedPrefix];
+                aggregates[matchedPrefix] = (
+                    Count: count + entry.Result.Count,
+                    NumberOfEndpoints: numberOfEndpoints + 1);
+            }
+        }
+
+        return aggregates;
     }
 
     private static List<EndpointGroupSummary> BuildSummaries(
         List<string> prefixes,
         Dictionary<string, (int Count, int NumberOfEndpoints)> aggregates) =>
-        [.. prefixes
-            .Select(prefix => new EndpointGroupSummary(
-                prefix,
-                aggregates[prefix].Count,
-                aggregates[prefix].NumberOfEndpoints))];
+        [.. prefixes.Select(prefix =>
+        {
+            var (count, numberOfEndpoints) = aggregates[prefix];
+            return new EndpointGroupSummary(prefix, count, numberOfEndpoints);
+        })];
 
     private static string? FindMatchingPrefix(string path, List<string> prefixes) =>
         prefixes.FirstOrDefault(prefix => PathMatchesPrefix(path, prefix));
 
     private static bool PathMatchesPrefix(string path, string prefix) =>
         path.Equals(prefix, StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase);
+        path.Length > prefix.Length &&
+         path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+         path[prefix.Length] == '/';
 
     private static string ExtractPrefixFromSignature(ApiEndpoint endpoint)
     {
