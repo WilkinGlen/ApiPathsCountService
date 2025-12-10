@@ -1,5 +1,5 @@
 <Solution>
   <Project Path="ApiPathsCountService.Tests/ApiPathsCountService.Tests.csproj" />
   <Project Path="ApiPathsCountService/ApiPathsCountService.csproj" />
-  <Project Path="SwaggerApiPathsService/SwaggerApiPathsService.csproj" Id="76830ed1-d2fd-4d0c-8c62-cb8ea8517a10" />
+  <Project Path="SplunkApiPathsService/SplunkApiPathsService.csproj" />
 </Solution>

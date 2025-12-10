@@ -1,24 +1,24 @@
-﻿namespace SwaggerApiPathsService;
+namespace SplunkApiPathsService;
 
-using SwaggerApiPathsService.Models;
+using SplunkApiPathsService.Models;
 
 /// <summary>
-/// Provides methods for grouping and summarizing Swagger API entries by endpoint prefixes.
+/// Provides methods for grouping and summarizing Splunk API entries by endpoint prefixes.
 /// </summary>
-public static class SwaggerApiPathsGroupsService
+public static class SplunkApiPathsGroupsService
 {
     /// <summary>
-    /// Gets endpoint group summaries by matching swagger API entries to endpoint prefixes.
+    /// Gets endpoint group summaries by matching Splunk API entries to endpoint prefixes.
     /// </summary>
-    /// <param name="swaggerApiEntries">The swagger API entries containing actual called paths and counts.</param>
+    /// <param name="splunkApiEntries">The Splunk API entries containing actual called paths and counts.</param>
     /// <param name="apiEndpoints">The API endpoint definitions with signature patterns.</param>
     /// <returns>A collection of summaries grouped by endpoint prefix.</returns>
     public static IEnumerable<EndpointGroupSummary> GetEndpointGroupSummaries(
-        IEnumerable<SwaggerApiEntry> swaggerApiEntries,
+        IEnumerable<SplunkApiEntry> splunkApiEntries,
         IEnumerable<ApiEndpoint> apiEndpoints)
     {
         var prefixes = GetDistinctEndpointPrefixes(apiEndpoints);
-        var aggregates = BuildAggregates(swaggerApiEntries, prefixes);
+        var aggregates = BuildAggregates(splunkApiEntries, prefixes);
 
         return BuildSummaries(prefixes, aggregates);
     }
@@ -29,7 +29,7 @@ public static class SwaggerApiPathsGroupsService
             .Distinct(StringComparer.OrdinalIgnoreCase)];
 
     private static Dictionary<string, (int Count, int NumberOfEndpoints)> BuildAggregates(
-        IEnumerable<SwaggerApiEntry> swaggerApiEntries,
+        IEnumerable<SplunkApiEntry> splunkApiEntries,
         List<string> prefixes)
     {
         var aggregates = prefixes.ToDictionary(
@@ -37,7 +37,7 @@ public static class SwaggerApiPathsGroupsService
             _ => (Count: 0, NumberOfEndpoints: 0),
             StringComparer.OrdinalIgnoreCase);
 
-        foreach (var entry in swaggerApiEntries)
+        foreach (var entry in splunkApiEntries)
         {
             if (entry.Result.Path is not { } path)
             {

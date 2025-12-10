@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ApiPathsCountService\ApiPathsCountService.csproj" />
-    <ProjectReference Include="..\SwaggerApiPathsService\SwaggerApiPathsService.csproj" />
+    <ProjectReference Include="..\SplunkApiPathsService\SplunkApiPathsService.csproj" />
   </ItemGroup>
 
 </Project>
